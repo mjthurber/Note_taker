@@ -50,23 +50,33 @@ app.post('/api/notes', (req, res) => {
 });
 
 app.delete('/api/notes/:id', async (req, res) => {
-  const noteId = req.params.id;
+  const noteId = parseInt(req.params.id); // Convert noteId to a number
 
   try {
-    const filePath = path.join(__dirname, '/db/db.json');
-    const jsonData = await fs.readFile(filePath, 'utf8');
-    let notes = JSON.parse(jsonData);
+    const notes = require('./db/db.json');
+    for (let i = 0; i < notes.length; i++) {
+      if (notes[i].id == noteId) {
+        notes.splice(i, 1);
+      }
+    };
+    fs.writeFileSync("./db/db.json", JSON.stringify(notes));
+    res.json(notes);
+    // const filePath = path.join(__dirname, '/db/db.json');
+    // const jsonData = await fs.readFile(filePath, 'utf8');
+    // let notes = JSON.parse(jsonData);
 
-    const updatedNotes = notes.filter(note => note.id !== noteId); // Filter out the note to be deleted
+    // const updatedNotes = notes.filter(note => note.id !== noteId); // Filter out the note to be deleted
 
-    await fs.writeFile(filePath, JSON.stringify(updatedNotes, null, 2)); // Update db.json file
+    // await fs.writeFile(filePath, JSON.stringify(updatedNotes, null, 2)); // Update db.json file
 
-    res.json({ success: true });
+    // res.json({ success: true });
   } catch (error) {
     console.error('Error deleting note:', error);
-    res.status(500).json({ error: 'Failed to delete note.' });
+    res.status(500).json({ error: 'Failed to delete note.', message: error.message });
   }
 });
+
+
 
 app.listen(PORT, () =>
   console.log(`App listening at http://localhost:${PORT} ʕ•́ᴥ•̀ʔっ`)
