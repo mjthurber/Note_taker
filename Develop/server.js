@@ -24,9 +24,6 @@ app.get('/api/notes', (req, res) =>
   res.sendFile(path.join(__dirname, '/db/db.json'))
 
 );
-app.listen(PORT, () =>
-  console.log(`App listening at http://localhost:${PORT} ʕ•́ᴥ•̀ʔっ`)
-);
 
 //* `POST /api/notes` should receive a new note to save on the request body, add it to the `db.json` file, and then return the new note to the client. You'll need to find a way to give each note a unique id when it's saved (look into npm packages that could do this for you).
 
@@ -52,27 +49,25 @@ app.post('/api/notes', (req, res) => {
   res.json(newNote);
 });
 
-app.delete('/api/notes/:id', (req, res) => {
-  // Read existing notes from the db.json file
-  const notes = JSON.parse(fs.readFileSync(path.join(__dirname, '/db/db.json'), 'utf8'));
+app.delete('/api/notes/:id', async (req, res) => {
+  const noteId = req.params.id;
 
-  // Extract the ID of the note to be deleted from the request parameters
-  const noteIdToDelete = req.params.id;
+  try {
+    const filePath = path.join(__dirname, '/db/db.json');
+    const jsonData = await fs.readFile(filePath, 'utf8');
+    let notes = JSON.parse(jsonData);
 
-  // Find the index of the note with the given ID in the notes array
-  const noteIndex = notes.findIndex(note => note.id.toString() === noteIdToDelete);
+    const updatedNotes = notes.filter(note => note.id !== noteId); // Filter out the note to be deleted
 
-  if (noteIndex !== -1) {
-    // Remove the note from the notes array if found
-    const deletedNote = notes.splice(noteIndex, 1)[0];
+    await fs.writeFile(filePath, JSON.stringify(updatedNotes, null, 2)); // Update db.json file
 
-    // Write the updated notes array back to the db.json file
-    fs.writeFileSync(path.join(__dirname, '/db/db.json'), JSON.stringify(notes));
-
-    // Respond with the deleted note
-    res.json(deletedNote);
-  } else {
-    // If note with given ID is not found, send a 404 Not Found status
-    res.status(404).json({ error: 'Note not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    res.status(500).json({ error: 'Failed to delete note.' });
   }
 });
+
+app.listen(PORT, () =>
+  console.log(`App listening at http://localhost:${PORT} ʕ•́ᴥ•̀ʔっ`)
+);
